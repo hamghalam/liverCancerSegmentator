@@ -1,0 +1,19 @@
+{
+    "description": "Task854_retP4",
+    "labels": {
+        "background": 0,
+        "liver": 1,
+        "tumor": 2,
+        "vessel": 3,
+        "cyst": 4
+    },
+    "licence": "touch it and you die",
+    "name": "Task854_retP4",
+    "numTraining": 303,
+    "reference": "f off, this is private",
+    "release": "0.0",
+    "channel_names": {
+        "0": "CT"
+    },
+    "file_ending": ".nii.gz"
+}
