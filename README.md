@@ -16,7 +16,6 @@ python scripts/download_model.py
 
 # 4. run inference
 python src/inference.py \
-  --input ./sample_ct \
-  --output ./output_mask \
-  --model ./models/model \
-  --task_id 123
+--input test_input \
+--output ./output_mask \
+--model ./models/model/nnUNetTrainerV2__nnUNetPlansv2.1
