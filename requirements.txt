@@ -1,0 +1,6 @@
+nnunet
+torch
+numpy
+SimpleITK
+tqdm
+huggingface_hub
