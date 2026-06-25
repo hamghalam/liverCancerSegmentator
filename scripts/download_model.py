@@ -1,12 +1,17 @@
+import os
+from dotenv import load_dotenv
 from huggingface_hub import snapshot_download
 
+load_dotenv()
+
 MODEL_REPO = "Hamghalam/liver-cancer-segmentation-nnunet"
-LOCAL_DIR = "./models"
+
+token = os.getenv("HF_TOKEN")
 
 snapshot_download(
     repo_id=MODEL_REPO,
-    local_dir=LOCAL_DIR,
-    local_dir_use_symlinks=False
+    local_dir="./models",
+    token=token
 )
 
 print("Model downloaded successfully!")
