@@ -5,8 +5,8 @@ Liver Cancer Segmentator: Metadata-Guided Confidence Scoring for Reliable Segmen
 
 
 # 1. clone repo
-git clone https://github.com/yourname/liver-segmentation-ai
-cd liver-segmentation-ai
+git clone https://github.com/hamghalam/liverCancerSegmentator
+cd liverCancerSegmentator
 
 # 2. install deps
 pip install -r requirements.txt
