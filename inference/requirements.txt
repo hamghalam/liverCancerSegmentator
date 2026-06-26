@@ -1,0 +1,3 @@
+nnunet
+torch
+numpy<2

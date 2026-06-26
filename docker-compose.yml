@@ -1,0 +1,54 @@
+services:
+
+  api:
+
+    build:
+      context: ./api
+
+    container_name:
+      liver_seg_api
+
+    ports:
+      - "8000:8000"
+
+
+    volumes:
+      - ./data:/data
+
+
+    depends_on:
+      - nnunet
+
+
+
+  nnunet:
+
+    build:
+      context: ./inference
+
+
+    container_name:
+      liver_seg_nnunet
+
+
+    ports:
+      - "9000:9000"
+
+
+    volumes:
+
+      - ./data:/data
+      - ./models:/models
+
+
+    deploy:
+
+      resources:
+
+        reservations:
+
+          devices:
+
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
