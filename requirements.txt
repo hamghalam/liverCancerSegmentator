@@ -1,4 +1,3 @@
-SimpleITK
 huggingface_hub
 numpy==1.26.4
 torch==2.1.2
