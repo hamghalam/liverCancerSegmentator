@@ -53,7 +53,7 @@ The pipeline:
 4. Evaluates segmentation reliability using confidence scoring
 5. Flags low-confidence predictions for further review
 
-![LCS Pipeline](demo/fig1_LCS_pipeline.png)
+![LCS Pipeline](demo/fig1_lcs_pipeline.png)
 
 ---
 
