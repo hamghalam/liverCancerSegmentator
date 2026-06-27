@@ -1,70 +1,92 @@
-# Liver Cancer Segmentator
+```markdown
+# Liver Cancer Segmentator (LCS)
 
 **Liver Cancer Segmentator: Metadata-Guided Confidence Scoring for Reliable Segmentation of Colorectal Liver Metastases in CT**
 
-A deployment-oriented deep learning pipeline for automated segmentation of liver and colorectal liver metastases (CRLM) from contrast-enhanced CT images using **nnUNet-based 3D medical image segmentation**.
+A deep learning framework for automatic and reliable segmentation of liver parenchyma and colorectal liver metastases (CRLM) from contrast-enhanced abdominal CT images.
 
 This repository provides:
 
-* Reproducible nnUNet inference pipeline
-* Automatic model downloading from Hugging Face
-* Five-fold nnUNet ensemble inference
-* Multi-class segmentation of liver and tumor regions
-* Containerized deployment architecture for AI inference services
+- A reproducible nnUNet-based 3D segmentation pipeline
+- Automatic model downloading from Hugging Face
+- Five-fold ensemble inference
+- Multi-class liver and tumor segmentation
+- Container-ready deployment architecture for AI-assisted radiology workflows
 
-The trained model checkpoints are available through Hugging Face:
+The trained model checkpoints are publicly available:
 
-**Model repository**
+**Hugging Face Model Repository**
 
 https://huggingface.co/Hamghalam/liver-cancer-segmentation-nnunet
+
 
 ---
 
 # Overview
 
-Accurate segmentation of colorectal liver metastases on CT images is important for quantitative assessment, treatment planning, and AI-assisted radiology workflows.
+Accurate segmentation of colorectal liver metastases (CRLM) on contrast-enhanced CT is essential for quantitative assessment, treatment planning, and AI-assisted radiology applications.
 
-This project implements a 3D nnUNet segmentation framework trained on a multi-institutional cohort of colorectal liver metastasis patients.
+This project introduces the **Liver Cancer Segmentator (LCS)**, a deep learning model designed for robust segmentation of liver parenchyma and metastatic tumors from abdominal CT examinations.
+
+The model was trained and evaluated using a multi-institutional dataset containing:
+
+- **446 contrast-enhanced CT examinations**
+- **355 cases for training**
+- **91 cases for testing**
+- Data from multiple clinical cohorts and treatment settings
 
 The model performs multi-class segmentation:
 
-| Label | Structure                           |
-| ----- | ----------------------------------- |
-| 0     | Background                          |
-| 1     | Liver                               |
-| 2     | Tumor (colorectal liver metastasis) |
+| Label | Structure |
+|------|-----------|
+| 0 | Background |
+| 1 | Liver parenchyma |
+| 2 | Colorectal liver metastasis tumor |
+
 
 ---
 
-# Repository Structure
+# End-to-End LCS Pipeline
 
-```
-liverCancerSegmentator/
+The complete workflow combines automated segmentation with confidence-based quality assessment.
 
-├── src/
-│   ├── inference.py
-│   └── model_loader.py
-│
-├── scripts/
-│   └── download_model.py
-│
-├── models/
-│   └── nnUNet model weights
-│
-├── demo/
-│   ├── ct_slice.png
-│   └── example_result.png
-│
-├── docker/
-│   ├── api/
-│   └── inference/
-│
-├── docker-compose.yml
-│
-├── requirements.txt
-│
-└── README.md
-```
+The pipeline includes:
+
+1. CT image preprocessing
+2. nnUNet-based segmentation
+3. Confidence estimation
+4. Automatic acceptance or rejection of segmentation results
+5. Radiologist review for low-confidence cases
+
+
+![LCS pipeline](figures/fig1_pipeline.png)
+
+
+**Figure 1. End-to-end LCS pipeline with confidence-based quality control.**  
+Input CT scans are preprocessed and segmented using nnUNet. The generated segmentation is evaluated using confidence scoring. High-confidence predictions are accepted automatically, while low-confidence predictions are flagged for expert review.
+
+
+---
+
+# Multi-Institutional Dataset
+
+The model was developed using CT examinations collected from diverse clinical cohorts representing different disease stages and treatment conditions.
+
+The dataset includes:
+
+- Chemotherapy cohort
+- Resection cohort
+- TCIA cohort
+- All stages-MDA cohort
+- All stages-MSK cohort
+
+
+![Dataset cohorts](figures/fig2_cohorts.png)
+
+
+**Figure 2. Representative contrast-enhanced CT samples from five cohorts used for model development.**  
+The examples demonstrate the variability of CRLM cases, including differences in disease burden, tumor appearance, and imaging characteristics across institutions.
+
 
 ---
 
@@ -72,30 +94,38 @@ liverCancerSegmentator/
 
 The segmentation model is based on:
 
-* **Framework:** nnUNet v1
-* **Architecture:** 3D U-Net
-* **Configuration:** 3D Full Resolution
-* **Training strategy:** Five-fold cross-validation ensemble
-* **Deep learning framework:** PyTorch
+- **Framework:** nnUNet v1
+- **Architecture:** 3D U-Net
+- **Configuration:** 3D Full Resolution
+- **Training strategy:** Five-fold cross-validation ensemble
+- **Deep learning framework:** PyTorch
 
-During inference, predictions from all five trained folds are combined to improve robustness and generalization.
 
-Pipeline:
+During inference, predictions from all five trained folds are combined:
 
 ```
-                 CT Image
-                     |
-          nnUNet preprocessing
-                     |
-      --------------------------------
-      |       |       |       |       |
-    fold0   fold1   fold2   fold3   fold4
-      --------------------------------
-                     |
-          Ensemble prediction
-                     |
-          Liver + Tumor mask
+
 ```
+             CT Image
+
+                |
+      nnUNet preprocessing
+
+    -------------------------
+    |    |    |    |        |
+  fold0 fold1 fold2 fold3 fold4
+
+    -------------------------
+
+                |
+      Ensemble prediction
+
+                |
+      Liver + Tumor mask
+```
+
+````
+
 
 ---
 
@@ -107,9 +137,9 @@ Pipeline:
 git clone https://github.com/hamghalam/liverCancerSegmentator.git
 
 cd liverCancerSegmentator
-```
+````
 
-## Create Python environment
+## Create environment
 
 ```bash
 python -m venv .venv
@@ -127,24 +157,24 @@ pip install -r requirements.txt
 
 # Download Model
 
-The trained nnUNet checkpoints are hosted on Hugging Face.
+The trained nnUNet checkpoints are available through Hugging Face.
 
-Download the model:
+Download:
 
 ```bash
 python scripts/download_model.py
 ```
 
-After downloading:
+Model structure:
 
 ```
 models/
 
 └── model/
     └── nnUNetTrainerV2__nnUNetPlansv2.1/
-        |
+
         ├── plans.pkl
-        |
+
         ├── fold_0/
         ├── fold_1/
         ├── fold_2/
@@ -156,21 +186,13 @@ models/
 
 # Inference
 
-Prepare CT images in NIfTI format:
+Prepare input CT scans in NIfTI format:
 
 ```
 test_input/
 
 └── patient_001_0000.nii.gz
 ```
-
-nnUNet automatically performs:
-
-* Image resampling
-* Intensity normalization
-* Foreground cropping
-* Patch-based inference
-* Restoration to original image geometry
 
 Run inference:
 
@@ -181,7 +203,7 @@ python src/inference.py \
 --model ./models/model/nnUNetTrainerV2__nnUNetPlansv2.1
 ```
 
-Generated segmentation:
+The generated segmentation masks will be saved:
 
 ```
 output_mask/
@@ -189,162 +211,127 @@ output_mask/
 └── patient_001.nii.gz
 ```
 
+The inference pipeline automatically performs:
+
+* Image resampling
+* Intensity normalization
+* Foreground cropping
+* Patch-based prediction
+* Restoration to original image geometry
+
 ---
 
-# Evaluation Performance
+# Performance
 
-Performance was evaluated using Dice similarity coefficient (DSC).
+Performance was evaluated on 91 independent test CT examinations.
 
-| Structure | Dice Score      |
-| --------- | --------------- |
-| Liver     | 0.9718 ± 0.0191 |
-| Tumor     | 0.7584 ± 0.2590 |
+| Structure | Dice Score                     |
+| --------- | ------------------------------ |
+| Liver     | 0.9707 (95% CI: 0.9663–0.9751) |
+| Tumor     | 0.7695 (95% CI: 0.7166–0.8224) |
+
+The model also demonstrated improved reliability through confidence scoring by incorporating:
+
+* Tumor volume
+* CT slice thickness
+
+This reduced the area under the risk coverage curve from **16.7 to 10.3**, improving automatic failure detection.
 
 ---
 
 # Demo Visualization
 
-Example segmentation generated using the provided inference pipeline.
+A demonstration example is provided using non-patient data.
 
-The visualization includes:
+The demo contains:
 
-* CT image slice
-* Liver segmentation
-* Tumor segmentation
+* Input CT slice
+* Predicted liver segmentation
+* Predicted tumor segmentation
 
-Input CT:
+```
+demo/
 
-![CT slice](demo/ct_slice.png)
-
-Segmentation result:
-
-![Segmentation result](demo/example_result.png)
+├── ct_slice.png
+└── example_result.png
+```
 
 ---
 
-# Containerized Deployment
+# Deployment Architecture
 
-This repository includes a container-based inference architecture designed for scalable deployment.
+The repository supports containerized deployment for integration into clinical AI workflows.
 
-The deployment consists of two services:
+Architecture:
 
 ```
-                    User
-                      |
-                      |
-              FastAPI REST API
-                      |
-             ------------------
-             Shared Volume
-             ------------------
-                      |
-          nnUNet Inference Service
-                      |
-                      |
-          Liver + Tumor Segmentation
+              User
+
+               |
+               |
+
+        FastAPI REST API
+
+               |
+
+        ----------------
+
+        Shared Volume
+
+        ----------------
+
+               |
+
+       nnUNet Inference Service
+
+               |
+
+        Liver + Tumor Mask
 ```
 
-## API Service
+## API Container
 
-The API layer provides:
+Responsibilities:
 
 * CT file upload
 * Input validation
-* Automatic nnUNet filename conversion
-* Inference request handling
-* Segmentation result delivery
+* Automatic nnUNet filename handling
+* Request management
+* Result delivery
 
-## Inference Service
+## Segmentation Container
 
-The nnUNet service provides:
+Responsibilities:
 
-* GPU-enabled inference
+* GPU-based inference
 * Five-fold ensemble prediction
-* Automatic preprocessing
+* nnUNet preprocessing
 * Segmentation generation
 
----
-
-# Docker Deployment
-
-## Requirements
-
-* Docker
-* Docker Compose
-* NVIDIA GPU (recommended)
-* NVIDIA Container Toolkit
-
-Build containers:
+Run with Docker:
 
 ```bash
 docker compose build
-```
 
-Start services:
-
-```bash
 docker compose up
 ```
-
-The inference API will be available at:
-
-```
-http://localhost:8000
-```
-
----
-
-# API Usage
-
-Example request:
-
-```bash
-curl \
--X POST \
--F "file=@patient.nii.gz" \
-http://localhost:8000/segment \
--o segmentation.nii.gz
-```
-
-The service automatically handles:
-
-1. CT image upload
-2. nnUNet filename conversion:
-
-```
-patient.nii.gz
-
-        ↓
-
-patient_0000.nii.gz
-```
-
-3. nnUNet preprocessing
-4. Five-fold ensemble inference
-5. Segmentation mask generation
-
----
-
-# Dataset
-
-The model was trained using a multi-institutional CT dataset of patients with colorectal liver metastases.
-
-Due to data privacy restrictions, the training dataset is not publicly released.
 
 ---
 
 # Intended Use
 
-This repository is intended for:
+This project is intended for:
 
-* Research in medical image analysis
-* Development of AI-assisted radiology tools
-* Benchmarking segmentation algorithms
-* Reproducible evaluation of nnUNet-based pipelines
+* Medical image analysis research
+* AI-assisted radiology development
+* Benchmarking liver and tumor segmentation algorithms
+* Reproducible nnUNet-based segmentation experiments
 
-## Limitations
+---
 
-* Performance may vary across CT scanners, acquisition protocols, contrast phases, and patient populations.
+# Limitations
+
+* Performance may vary across scanners, acquisition protocols, contrast phases, and patient populations.
 * The model was developed specifically for colorectal liver metastasis cases.
 * External validation is required before clinical deployment.
 * This model is not intended for autonomous clinical decision-making.
@@ -381,4 +368,6 @@ year={2021}
 
 # License
 
-Please refer to the repository license and dataset restrictions before using this model.
+Please refer to the repository license and dataset restrictions before use.
+
+
