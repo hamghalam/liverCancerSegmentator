@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "liver-cancer-segmentator"
+version = "0.1.0"
+description = "nnUNet-based liver and colorectal liver metastasis segmentation with confidence-based failure detection."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+  { name = "Mohammad Hamghalam" }
+]
+dependencies = [
+  "huggingface_hub",
+  "numpy==1.26.4",
+  "torch==2.1.2",
+  "nnunet==1.7.1",
+  "SimpleITK",
+  "tqdm",
+  "pandas",
+  "scipy",
+  "matplotlib",
+  "seaborn",
+  "scikit-learn",
+  "nibabel",
+  "medpy",
+]
+
+[project.optional-dependencies]
+api = [
+  "fastapi",
+  "uvicorn",
+  "python-multipart",
+  "requests",
+]
+notebook = [
+  "jupyter",
+]
+dev = [
+  "jupyter",
+]
+
+[tool.setuptools]
+packages = ["failureDetection"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

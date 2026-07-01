@@ -148,7 +148,7 @@ liverCancerSegmentator/
 │
 ├── docker-compose.yml
 │
-├── requirements.txt
+├── pyproject.toml
 │
 └── README.md
 ```
@@ -176,7 +176,7 @@ source .venv/bin/activate
 Install dependencies:
 
 ```bash
-pip install -r requirements.txt
+pip install -e ".[api,notebook]"
 ```
 
 ---
