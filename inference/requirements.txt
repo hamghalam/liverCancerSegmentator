@@ -1,3 +1,4 @@
 nnunet
 torch
 numpy<2
+SimpleITK

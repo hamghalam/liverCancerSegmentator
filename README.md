@@ -297,6 +297,32 @@ Run the notebook:
 jupyter notebook failureDetection/fd_clean.ipynb
 ```
 
+For a production-style command-line run, use:
+
+```bash
+python -m failureDetection.confidence_cli \
+--input data/input \
+--output data/output \
+--model models/nnUNetTrainerV2__nnUNetPlansv2.1 \
+--case-id patient_001
+```
+
+This command saves:
+
+```text
+data/output/
+├── patient_001.nii.gz
+├── patient_001_confidence.json
+└── fold_predictions/
+    ├── fold_0/patient_001.nii.gz
+    ├── fold_1/patient_001.nii.gz
+    ├── fold_2/patient_001.nii.gz
+    ├── fold_3/patient_001.nii.gz
+    └── fold_4/patient_001.nii.gz
+```
+
+The JSON metadata includes pairwise fold Dice confidence, fold prediction paths, voxel spacing, image size, and estimated tumor volume.
+
 This reliability module is intended for research evaluation and quality-control workflows. It does not replace expert review.
 
 ---
@@ -435,6 +461,17 @@ nnUNet inference
 
 segmentation mask
 ```
+
+Confidence-enabled inference:
+
+```bash
+curl \
+-X POST \
+-F "file=@patient.nii.gz" \
+http://localhost:8000/segment-with-confidence
+```
+
+This endpoint returns JSON with the saved segmentation path, confidence metadata path, pairwise fold agreement scores, and basic segmentation metadata.
 
 ---
 

@@ -16,6 +16,7 @@ INPUT_DIR = "/data/input"
 OUTPUT_DIR = "/data/output"
 
 NNUNET_SERVICE = "http://nnunet:9000/predict"
+NNUNET_CONFIDENCE_SERVICE = "http://nnunet:9000/predict-with-confidence"
 
 
 os.makedirs(INPUT_DIR, exist_ok=True)
@@ -83,3 +84,41 @@ async def segment(file: UploadFile = File(...)):
         media_type="application/gzip",
         filename="segmentation.nii.gz"
     )
+
+
+@app.post("/segment-with-confidence")
+async def segment_with_confidence(file: UploadFile = File(...)):
+
+    case_id = str(uuid.uuid4())
+    input_name = f"{case_id}_0000.nii.gz"
+    input_path = os.path.join(INPUT_DIR, input_name)
+
+    with open(input_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    response = requests.post(
+        NNUNET_CONFIDENCE_SERVICE,
+        json={
+            "case_id": case_id,
+            "label_value": 2
+        }
+    )
+
+    if response.status_code != 200:
+        return {
+            "status": "failed",
+            "message": response.text
+        }
+
+    output_file = os.path.join(OUTPUT_DIR, f"{case_id}.nii.gz")
+    confidence_file = os.path.join(OUTPUT_DIR, f"{case_id}_confidence.json")
+
+    result = response.json()
+
+    return {
+        "status": "completed",
+        "case_id": case_id,
+        "segmentation_path": output_file,
+        "confidence_metadata_path": confidence_file,
+        "confidence": result.get("confidence", {})
+    }

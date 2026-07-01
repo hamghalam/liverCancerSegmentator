@@ -56,6 +56,68 @@ jupyter notebook failureDetection/fd_clean.ipynb
 
 Update paths in the first notebook cell or copy `example_config.yaml` into a private local config.
 
+## Command-Line Confidence Inference
+
+For a more production-oriented workflow, run the confidence pipeline directly:
+
+```bash
+python -m failureDetection.confidence_cli \
+--input data/input \
+--output data/output \
+--model models/nnUNetTrainerV2__nnUNetPlansv2.1 \
+--case-id patient_001
+```
+
+Input files must follow nnUNet naming:
+
+```text
+data/input/
+└── patient_001_0000.nii.gz
+```
+
+The command writes:
+
+```text
+data/output/
+├── patient_001.nii.gz
+├── patient_001_confidence.json
+└── fold_predictions/
+    ├── fold_0/patient_001.nii.gz
+    ├── fold_1/patient_001.nii.gz
+    ├── fold_2/patient_001.nii.gz
+    ├── fold_3/patient_001.nii.gz
+    └── fold_4/patient_001.nii.gz
+```
+
+The metadata JSON includes:
+
+- Ensemble prediction path
+- Per-fold prediction paths
+- Pairwise fold Dice scores
+- Mean pairwise Dice confidence
+- Voxel spacing and image size
+- Estimated tumor volume
+
+## API and Docker
+
+The Dockerized API exposes a confidence-enabled endpoint:
+
+```bash
+docker compose build
+docker compose up
+```
+
+Then call:
+
+```bash
+curl \
+-X POST \
+-F "file=@patient.nii.gz" \
+http://localhost:8000/segment-with-confidence
+```
+
+The endpoint returns JSON containing the case ID, segmentation path, metadata path, and confidence scores.
+
 ## CV Summary
 
 This project demonstrates a reliability layer for nnUNet medical image segmentation: ensemble-disagreement confidence scoring, cohort-level failure analysis, and AURC-based evaluation for identifying low-confidence liver/tumor predictions before clinical review.

@@ -2,7 +2,11 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 import os
+import shutil
+from pathlib import Path
 from nnunet.inference.predict import predict_from_folder
+
+from failureDetection.confidence_cli import predict_with_confidence
 
 
 
@@ -11,6 +15,7 @@ app = FastAPI()
 
 INPUT_DIR="/data/input"
 OUTPUT_DIR="/data/output"
+WORK_DIR="/data/work"
 
 
 MODEL="/models/nnUNetTrainerV2__nnUNetPlansv2.1"
@@ -19,6 +24,10 @@ MODEL="/models/nnUNetTrainerV2__nnUNetPlansv2.1"
 
 class Request(BaseModel):
     case_id:str
+
+class ConfidenceRequest(BaseModel):
+    case_id:str
+    label_value:int=2
 
 
 
@@ -44,6 +53,33 @@ def predict(req:Request):
     return {
         "status":"completed",
         "case":req.case_id
+    }
+
+
+@app.post("/predict-with-confidence")
+def predict_with_confidence_endpoint(req:ConfidenceRequest):
+
+
+    case_input_dir = Path(WORK_DIR) / req.case_id / "input"
+    case_input_dir.mkdir(parents=True, exist_ok=True)
+    source_file = Path(INPUT_DIR) / f"{req.case_id}_0000.nii.gz"
+    case_file = case_input_dir / source_file.name
+    shutil.copyfile(source_file, case_file)
+
+
+    metadata = predict_with_confidence(
+        model=Path(MODEL),
+        input_dir=case_input_dir,
+        output_dir=Path(OUTPUT_DIR),
+        case_id=req.case_id,
+        label_value=req.label_value,
+    )
+
+
+    return {
+        "status":"completed",
+        "case":req.case_id,
+        "confidence":metadata
     }
 
 
