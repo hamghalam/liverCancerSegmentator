@@ -10,6 +10,7 @@ This repository provides:
 * Automatic model downloading from Hugging Face
 * Five-fold nnUNet ensemble inference
 * Multi-class segmentation of liver and tumor regions
+* Confidence-based failure detection for low-reliability predictions
 * Containerized deployment architecture for AI inference services
 
 The trained model checkpoints are publicly available:
@@ -50,7 +51,7 @@ The pipeline:
 1. Receives contrast-enhanced CT images
 2. Performs automated nnUNet preprocessing
 3. Generates liver and tumor segmentation masks
-4. Evaluates segmentation reliability using confidence scoring
+4. Estimates prediction reliability using ensemble-disagreement confidence scoring
 5. Flags low-confidence predictions for further review
 
 ![LCS Pipeline](demo/fig1_lcs_pipeline.png)
@@ -107,6 +108,10 @@ Pipeline:
           Ensemble prediction
                      |
           Liver + Tumor mask
+                     |
+        Confidence-based failure detection
+                     |
+        Review priority / reliability report
 ```
 
 ---
@@ -129,6 +134,13 @@ liverCancerSegmentator/
 ├── demo/
 │   ├── ct_slice.png
 │   └── example_result.png
+│
+├── failureDetection/
+│   ├── fd_clean.ipynb
+│   ├── failure_detection.py
+│   ├── metrics.py
+│   ├── plots.py
+│   └── README.md
 │
 ├── docker/
 │   ├── api/
@@ -232,6 +244,60 @@ output_mask/
 
 └── patient_001.nii.gz
 ```
+
+---
+
+# Confidence-Based Failure Detection
+
+The segmentation pipeline includes an optional reliability layer for identifying predictions that may require human review.
+
+This analysis uses the five-fold nnUNet ensemble to estimate confidence from agreement between fold predictions. Low agreement suggests higher uncertainty and a greater chance of segmentation failure.
+
+The failure-detection workflow computes:
+
+* **DSC:** segmentation accuracy against reference masks
+* **Risk:** `1 - DSC`
+* **Confidence:** mean pairwise Dice agreement across ensemble folds
+* **AURC:** area under the risk-coverage curve for evaluating failure ranking
+* **Cohort analysis:** reliability differences across patient cohorts and acquisition settings
+
+The cleaned public notebook is available at:
+
+```text
+failureDetection/fd_clean.ipynb
+```
+
+Supporting utilities are provided in:
+
+```text
+failureDetection/metrics.py
+failureDetection/failure_detection.py
+failureDetection/plots.py
+```
+
+Expected evaluation layout:
+
+```text
+data/
+├── labels/
+│   └── patient_001.nii.gz
+└── predictions/
+    ├── ensemble/
+    │   └── patient_001.nii.gz
+    ├── fold_0/
+    ├── fold_1/
+    ├── fold_2/
+    ├── fold_3/
+    └── fold_4/
+```
+
+Run the notebook:
+
+```bash
+jupyter notebook failureDetection/fd_clean.ipynb
+```
+
+This reliability module is intended for research evaluation and quality-control workflows. It does not replace expert review.
 
 ---
 
