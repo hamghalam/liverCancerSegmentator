@@ -1,0 +1,14 @@
+# Example configuration for the public failure-detection notebook.
+# Replace these paths with your local data locations.
+
+reference_dir: data/labels
+ensemble_dir: data/predictions/ensemble
+fold_dirs:
+  - data/predictions/fold_0
+  - data/predictions/fold_1
+  - data/predictions/fold_2
+  - data/predictions/fold_3
+  - data/predictions/fold_4
+
+label_value: 2
+output_dir: failureDetection/outputs

@@ -12,6 +12,12 @@ models/
 
 # Jupyter
 .ipynb_checkpoints/
+failureDetection/fd.ipynb
+
+# Local data and generated analysis outputs
+data/
+failureDetection/outputs/
+failureDetection/*.csv
 
 # OS files
 .DS_Store

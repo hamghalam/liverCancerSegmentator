@@ -4,3 +4,11 @@ torch==2.1.2
 nnunet==1.7.1
 SimpleITK
 tqdm
+pandas
+scipy
+matplotlib
+seaborn
+scikit-learn
+nibabel
+medpy
+jupyter
