@@ -1,3 +1,33 @@
+Metadata-Version: 2.4
+Name: liver-cancer-segmentator
+Version: 0.1.0
+Summary: nnUNet-based liver and colorectal liver metastasis segmentation with confidence-based failure detection.
+Author: Mohammad Hamghalam
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: huggingface_hub
+Requires-Dist: numpy==1.26.4
+Requires-Dist: torch==2.1.2
+Requires-Dist: nnunet==1.7.1
+Requires-Dist: SimpleITK
+Requires-Dist: tqdm
+Requires-Dist: pandas
+Requires-Dist: scipy
+Requires-Dist: matplotlib
+Requires-Dist: seaborn
+Requires-Dist: scikit-learn
+Requires-Dist: nibabel
+Requires-Dist: medpy
+Provides-Extra: api
+Requires-Dist: fastapi; extra == "api"
+Requires-Dist: uvicorn; extra == "api"
+Requires-Dist: python-multipart; extra == "api"
+Requires-Dist: requests; extra == "api"
+Provides-Extra: notebook
+Requires-Dist: jupyter; extra == "notebook"
+Provides-Extra: dev
+Requires-Dist: jupyter; extra == "dev"
+
 # Liver Cancer Segmentator
 
 **Liver Cancer Segmentator (LCS): Metadata-Guided Confidence Scoring for Reliable Segmentation of Colorectal Liver Metastases in CT**
@@ -11,7 +41,6 @@ This repository provides:
 * Five-fold nnUNet ensemble inference
 * Multi-class segmentation of liver and tumor regions
 * Confidence-based failure detection for low-reliability predictions
-* LangGraph-based Clinical AI Copilot for multi-agent case review
 * Containerized deployment architecture for AI inference services
 
 The trained model checkpoints are publicly available:
@@ -141,13 +170,6 @@ liverCancerSegmentator/
 │   ├── failure_detection.py
 │   ├── metrics.py
 │   ├── plots.py
-│   └── README.md
-│
-├── clinical_ai_copilot/
-│   ├── agents.py
-│   ├── graph.py
-│   ├── run_demo.py
-│   ├── sample_case.json
 │   └── README.md
 │
 ├── docker/
@@ -332,50 +354,6 @@ data/output/
 The JSON metadata includes pairwise fold Dice confidence, fold prediction paths, voxel spacing, image size, and estimated tumor volume.
 
 This reliability module is intended for research evaluation and quality-control workflows. It does not replace expert review.
-
----
-
-# Clinical AI Copilot
-
-This repository includes a professional multi-agent extension for clinical case review:
-
-```text
-clinical_ai_copilot/
-```
-
-The copilot uses **LangGraph** to orchestrate six agents:
-
-* **Image Analysis Agent:** consumes nnUNet segmentation and confidence metadata, including tumor volume and uncertainty
-* **Radiomics Agent:** prepares a PyRadiomics-ready feature summary and treatment-response signal
-* **Medical Literature Agent:** provides a RAG-ready retrieval layer for PubMed and guideline evidence
-* **Clinical Reasoning Agent:** synthesizes imaging, radiology report text, patient context, and evidence
-* **Evidence Verification Agent:** checks unsupported claims and hallucination risk
-* **Report Generator:** creates a traceable clinical summary for human review
-
-Install optional copilot dependencies:
-
-```bash
-pip install -e ".[copilot]"
-```
-
-Run an offline demo:
-
-```bash
-set COPILOT_MOCK_LLM=1
-python -m clinical_ai_copilot.run_demo
-```
-
-Run with Google Gemini and optional LangSmith tracing:
-
-```bash
-set GOOGLE_API_KEY=your_google_api_key
-set LANGSMITH_API_KEY=your_langsmith_api_key
-python -m clinical_ai_copilot.run_demo
-```
-
-This module demonstrates **LangGraph**, **Multi-Agent AI**, **RAG**, **Tool Calling**, **LLM Evaluation**, **Human-in-the-loop**, **AI Safety**, and **Explainability** on top of the existing liver cancer segmentation pipeline.
-
-All outputs are research copilot outputs and require expert clinical review.
 
 ---
 

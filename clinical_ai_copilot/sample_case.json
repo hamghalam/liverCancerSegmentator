@@ -1,0 +1,21 @@
+{
+  "case_id": "demo_crlm_001",
+  "ct_path": "data/input/demo_crlm_001_0000.nii.gz",
+  "segmentation_metadata_path": null,
+  "radiology_report": "Multiple colorectal liver metastases are present. No definite new extrahepatic disease is described. Interval size change is not available in this demo report.",
+  "patient_profile": {
+    "age": 62,
+    "sex": "female",
+    "primary_cancer": "colorectal cancer",
+    "performance_status": "ECOG 1",
+    "treatment_context": "pre-treatment planning"
+  },
+  "clinical_question": "Assess treatment response likelihood and whether this patient may be considered for surgical review.",
+  "guidelines": [
+    "Colorectal liver metastasis management should be discussed in a multidisciplinary tumor board.",
+    "Resectability assessment depends on lesion distribution, future liver remnant, vascular involvement, extrahepatic disease, and patient fitness.",
+    "Systemic therapy response and repeat imaging are commonly used to guide treatment sequencing."
+  ],
+  "human_review_required": true,
+  "audit_log": []
+}

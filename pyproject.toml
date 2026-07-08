@@ -34,6 +34,13 @@ api = [
   "python-multipart",
   "requests",
 ]
+copilot = [
+  "langgraph>=0.2.70",
+  "langchain-google-genai>=2.0.8",
+  "langchain-core>=0.3.30",
+  "langsmith>=0.2.10",
+  "pydantic>=2.7",
+]
 notebook = [
   "jupyter",
 ]
@@ -42,7 +49,7 @@ dev = [
 ]
 
 [tool.setuptools]
-packages = ["failureDetection"]
+packages = ["failureDetection", "clinical_ai_copilot"]
 
 [tool.ruff]
 line-length = 100
