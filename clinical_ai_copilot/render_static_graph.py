@@ -58,60 +58,69 @@ def draw_box(
 
 def render_graph(output_path: Path) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    image = Image.new("RGB", (1600, 1350), "#f7f9fb")
+    image = Image.new("RGB", (1280, 940), "#f7f9fb")
     draw = ImageDraw.Draw(image)
 
     draw.text(
-        (90, 55),
+        (60, 42),
         "Clinical AI Copilot - Parallel LangGraph Workflow",
         fill="#101820",
-        font=load_font(44, bold=True),
+        font=load_font(34, bold=True),
     )
     draw.text(
-        (92, 112),
-        "A planner fans out memory, imaging, and RAG branches; a reducer joins context before reasoning and safety review.",
+        (62, 88),
+        "Planner fans out memory, imaging, and RAG branches; reducer joins context before reasoning and safety review.",
         fill="#44515f",
-        font=load_font(22),
+        font=load_font(18),
     )
 
     boxes = {
-        "planner": (590, 205, 1010, 315, "Planner", "Agent Orchestration", "#ffffff"),
-        "memory": (70, 410, 430, 520, "Memory", "Case Context", "#f0e9ff"),
-        "image": (520, 410, 880, 520, "Tool Calling", "Image Analysis", "#dff3ff"),
-        "rag": (970, 410, 1330, 520, "RAG", "PubMed + Guidelines", "#e6f5df"),
-        "radiomics": (520, 610, 880, 720, "Tool Calling", "Radiomics Agent", "#dff3ff"),
-        "reducer": (590, 790, 1010, 905, "Reducer", "Evidence + Imaging Context", "#e9edf2"),
-        "reasoning": (590, 945, 1010, 1060, "Multi-Agent AI", "Clinical Reasoning", "#fff1cc"),
-        "evaluation": (70, 1140, 430, 1255, "LLM Evaluation", "AI Safety", "#ffe2df"),
-        "human": (590, 1140, 1010, 1255, "Human-in-the-loop", "Review Gate", "#ede7ff"),
-        "report": (1070, 1140, 1430, 1255, "Explainability", "Report Generator", "#e9edf2"),
+        "planner": (465, 150, 815, 235, "Planner", "Agent Orchestration", "#ffffff"),
+        "memory": (55, 330, 335, 410, "Memory", "Case Context", "#f0e9ff"),
+        "image": (500, 330, 780, 410, "Tool Calling", "Image Analysis", "#dff3ff"),
+        "rag": (945, 330, 1225, 410, "RAG", "PubMed + Guidelines", "#e6f5df"),
+        "radiomics": (500, 485, 780, 565, "Tool Calling", "Radiomics", "#dff3ff"),
+        "reducer": (465, 635, 815, 720, "Reducer", "Evidence + Imaging Context", "#e9edf2"),
+        "reasoning": (465, 795, 815, 880, "Multi-Agent AI", "Clinical Reasoning", "#fff1cc"),
+        "evaluation": (55, 795, 335, 880, "LLM Evaluation", "AI Safety", "#ffe2df"),
+        "human": (875, 795, 1155, 880, "Human-in-the-loop", "Review Gate", "#ede7ff"),
     }
 
     for _, (x1, y1, x2, y2, title, subtitle, fill) in boxes.items():
         draw_box(draw, (x1, y1, x2, y2), title, subtitle, fill)
 
-    draw.rounded_rectangle((590, 70, 1010, 155), radius=18, fill="#ffffff", outline="#24313f", width=2)
-    draw.text((696, 90), "Case Inputs", fill="#101820", font=load_font(28, bold=True))
-    draw.text((650, 123), "CT + Report + Patient Data", fill="#334150", font=load_font(18))
-    draw_arrow(draw, (800, 155), (800, 205))
+    draw.rounded_rectangle((465, 112, 815, 122), radius=5, fill="#24313f")
+    draw.text((512, 115), "Case Inputs: CT + Report + Patient Data", fill="#334150", font=load_font(1))
+    draw.text((485, 110), "Case Inputs: CT + Report + Patient Data", fill="#101820", font=load_font(18, bold=True))
+    draw_arrow(draw, (640, 124), (640, 150))
 
-    draw_arrow(draw, (590, 260), (430, 465))
-    draw_arrow(draw, (800, 315), (700, 410))
-    draw_arrow(draw, (1010, 260), (970, 465))
-    draw_arrow(draw, (700, 520), (700, 610))
+    # Planner fan-out.
+    draw.line([(640, 235), (640, 285), (195, 285), (195, 330)], fill="#51606f", width=3)
+    draw.polygon([(195, 330), (187, 317), (203, 317)], fill="#51606f")
+    draw.line([(640, 235), (640, 330)], fill="#51606f", width=3)
+    draw.polygon([(640, 330), (632, 317), (648, 317)], fill="#51606f")
+    draw.line([(640, 285), (1085, 285), (1085, 330)], fill="#51606f", width=3)
+    draw.polygon([(1085, 330), (1077, 317), (1093, 317)], fill="#51606f")
+    draw.text((570, 257), "parallel branches", fill="#5b6875", font=load_font(16, bold=True))
 
-    draw.line([(250, 520), (250, 755), (800, 755), (800, 790)], fill="#51606f", width=3)
-    draw.polygon([(800, 790), (792, 777), (808, 777)], fill="#51606f")
-    draw.line([(700, 720), (700, 755), (800, 755)], fill="#51606f", width=3)
-    draw.line([(1150, 520), (1150, 755), (800, 755)], fill="#51606f", width=3)
+    # Image branch.
+    draw_arrow(draw, (640, 410), (640, 485))
 
-    draw_arrow(draw, (800, 905), (800, 945))
-    draw.line([(800, 1060), (800, 1095), (250, 1095), (250, 1140)], fill="#51606f", width=3)
-    draw.polygon([(250, 1140), (242, 1127), (258, 1127)], fill="#51606f")
-    draw_arrow(draw, (430, 1198), (590, 1198))
-    draw_arrow(draw, (1010, 1198), (1070, 1198))
+    # Reducer fan-in from memory, radiomics, and RAG.
+    draw.line([(195, 410), (195, 602), (640, 602), (640, 635)], fill="#51606f", width=3)
+    draw.polygon([(640, 635), (632, 622), (648, 622)], fill="#51606f")
+    draw.line([(640, 565), (640, 635)], fill="#51606f", width=3)
+    draw.polygon([(640, 635), (632, 622), (648, 622)], fill="#51606f")
+    draw.line([(1085, 410), (1085, 602), (640, 602)], fill="#51606f", width=3)
+    draw.text((548, 606), "reducer join", fill="#5b6875", font=load_font(16, bold=True))
 
-    draw.text((680, 765), "parallel reducer join", fill="#5b6875", font=load_font(18, bold=True))
+    # Reasoning and safety gates.
+    draw_arrow(draw, (640, 720), (640, 795))
+    draw_arrow(draw, (465, 838), (335, 838))
+    draw_arrow(draw, (815, 838), (875, 838))
+
+    draw_box(draw, (465, 910, 815, 925), "Explainability", "Report Generator", "#e9edf2")
+    draw_arrow(draw, (1015, 880), (815, 918))
 
     image.save(output_path)
 
