@@ -1,0 +1,26 @@
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	Tool\20Calling\20-\20Image\20Analysis(Tool Calling - Image Analysis)
+	Tool\20Calling\20-\20Radiomics(Tool Calling - Radiomics)
+	RAG\20-\20PubMed\20\2b\20Guidelines(RAG - PubMed + Guidelines)
+	Multi-Agent\20AI\20-\20Clinical\20Reasoning(Multi-Agent AI - Clinical Reasoning)
+	LLM\20Evaluation\20\2b\20AI\20Safety(LLM Evaluation + AI Safety)
+	Human-in-the-loop\20Review(Human-in-the-loop Review)
+	Explainability\20-\20Report\20Generator(Explainability - Report Generator)
+	__end__([<p>__end__</p>]):::last
+	Human-in-the-loop\20Review --> Explainability\20-\20Report\20Generator;
+	LLM\20Evaluation\20\2b\20AI\20Safety --> Human-in-the-loop\20Review;
+	Multi-Agent\20AI\20-\20Clinical\20Reasoning --> LLM\20Evaluation\20\2b\20AI\20Safety;
+	RAG\20-\20PubMed\20\2b\20Guidelines --> Multi-Agent\20AI\20-\20Clinical\20Reasoning;
+	Tool\20Calling\20-\20Image\20Analysis --> Tool\20Calling\20-\20Radiomics;
+	Tool\20Calling\20-\20Radiomics --> RAG\20-\20PubMed\20\2b\20Guidelines;
+	__start__ --> Tool\20Calling\20-\20Image\20Analysis;
+	Explainability\20-\20Report\20Generator --> __end__;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc

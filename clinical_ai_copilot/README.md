@@ -138,7 +138,8 @@ display(Image(react_graph.get_graph(xray=True).draw_mermaid_png()))
 From the command line:
 
 ```bash
-python -m clinical_ai_copilot.visualize_graph --output clinical_ai_copilot_output/langgraph.png
+python -m clinical_ai_copilot.visualize_graph --format mermaid --output clinical_ai_copilot_output/langgraph.mmd
+python -m clinical_ai_copilot.visualize_graph --format png --output clinical_ai_copilot_output/langgraph.png
 ```
 
 The rendered node labels intentionally highlight **Multi-Agent AI**, **Agent Orchestration**, **RAG**, **LLM Evaluation**, **Human-in-the-loop**, **Tool Calling**, **AI Safety**, and **Explainability**.

@@ -19,13 +19,13 @@ from .llm import load_llm
 from .state import CopilotState
 
 
-NODE_IMAGE = "Tool Calling: Image Analysis"
-NODE_RADIOMICS = "Tool Calling: Radiomics"
-NODE_RAG = "RAG: PubMed + Guidelines"
-NODE_REASONING = "Multi-Agent AI: Clinical Reasoning"
+NODE_IMAGE = "Tool Calling - Image Analysis"
+NODE_RADIOMICS = "Tool Calling - Radiomics"
+NODE_RAG = "RAG - PubMed + Guidelines"
+NODE_REASONING = "Multi-Agent AI - Clinical Reasoning"
 NODE_EVALUATION = "LLM Evaluation + AI Safety"
 NODE_HUMAN = "Human-in-the-loop Review"
-NODE_REPORT = "Explainability: Report Generator"
+NODE_REPORT = "Explainability - Report Generator"
 
 
 def configure_langsmith(config: CopilotConfig) -> None:
@@ -87,6 +87,15 @@ def save_graph_png(output_path: str | Path = "clinical_ai_copilot_output/langgra
     output.parent.mkdir(parents=True, exist_ok=True)
     png = app.get_graph(xray=True).draw_mermaid_png()
     output.write_bytes(png)
+    return output
+
+
+def save_graph_mermaid(output_path: str | Path = "clinical_ai_copilot_output/langgraph.mmd") -> Path:
+    app = build_copilot_graph()
+    output = Path(output_path)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    mermaid = app.get_graph(xray=True).draw_mermaid()
+    output.write_text(mermaid, encoding="utf-8")
     return output
 
 
