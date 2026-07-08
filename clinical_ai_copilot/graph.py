@@ -8,6 +8,7 @@ from typing import Any
 from .agents import (
     clinical_reasoning_agent,
     evidence_verification_agent,
+    human_review_agent,
     image_analysis_agent,
     literature_agent,
     radiomics_agent,
@@ -16,6 +17,15 @@ from .agents import (
 from .config import CopilotConfig
 from .llm import load_llm
 from .state import CopilotState
+
+
+NODE_IMAGE = "Tool Calling: Image Analysis"
+NODE_RADIOMICS = "Tool Calling: Radiomics"
+NODE_RAG = "RAG: PubMed + Guidelines"
+NODE_REASONING = "Multi-Agent AI: Clinical Reasoning"
+NODE_EVALUATION = "LLM Evaluation + AI Safety"
+NODE_HUMAN = "Human-in-the-loop Review"
+NODE_REPORT = "Explainability: Report Generator"
 
 
 def configure_langsmith(config: CopilotConfig) -> None:
@@ -39,21 +49,45 @@ def build_copilot_graph(config: CopilotConfig | None = None) -> Any:
         ) from exc
 
     graph = StateGraph(CopilotState)
-    graph.add_node("image_analysis", image_analysis_agent)
-    graph.add_node("radiomics", radiomics_agent)
-    graph.add_node("medical_literature", literature_agent)
-    graph.add_node("clinical_reasoning", lambda state: clinical_reasoning_agent(state, llm))
-    graph.add_node("evidence_verification", lambda state: evidence_verification_agent(state, llm))
-    graph.add_node("report_generator", report_generator_agent)
+    graph.add_node(NODE_IMAGE, image_analysis_agent)
+    graph.add_node(NODE_RADIOMICS, radiomics_agent)
+    graph.add_node(
+        NODE_RAG,
+        lambda state: literature_agent(
+            state,
+            enable_pubmed=config.enable_pubmed,
+            pubmed_max_results=config.pubmed_max_results,
+        ),
+    )
+    graph.add_node(NODE_REASONING, lambda state: clinical_reasoning_agent(state, llm))
+    graph.add_node(NODE_EVALUATION, lambda state: evidence_verification_agent(state, llm))
+    graph.add_node(
+        NODE_HUMAN,
+        lambda state: human_review_agent(
+            state,
+            enable_interrupt=config.enable_human_interrupt,
+        ),
+    )
+    graph.add_node(NODE_REPORT, report_generator_agent)
 
-    graph.set_entry_point("image_analysis")
-    graph.add_edge("image_analysis", "radiomics")
-    graph.add_edge("radiomics", "medical_literature")
-    graph.add_edge("medical_literature", "clinical_reasoning")
-    graph.add_edge("clinical_reasoning", "evidence_verification")
-    graph.add_edge("evidence_verification", "report_generator")
-    graph.add_edge("report_generator", END)
+    graph.set_entry_point(NODE_IMAGE)
+    graph.add_edge(NODE_IMAGE, NODE_RADIOMICS)
+    graph.add_edge(NODE_RADIOMICS, NODE_RAG)
+    graph.add_edge(NODE_RAG, NODE_REASONING)
+    graph.add_edge(NODE_REASONING, NODE_EVALUATION)
+    graph.add_edge(NODE_EVALUATION, NODE_HUMAN)
+    graph.add_edge(NODE_HUMAN, NODE_REPORT)
+    graph.add_edge(NODE_REPORT, END)
     return graph.compile()
+
+
+def save_graph_png(output_path: str | Path = "clinical_ai_copilot_output/langgraph.png") -> Path:
+    app = build_copilot_graph()
+    output = Path(output_path)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    png = app.get_graph(xray=True).draw_mermaid_png()
+    output.write_bytes(png)
+    return output
 
 
 def run_copilot(case: CopilotState, output_path: str | Path | None = None) -> CopilotState:

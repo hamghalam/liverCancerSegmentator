@@ -347,9 +347,10 @@ The copilot uses **LangGraph** to orchestrate six agents:
 
 * **Image Analysis Agent:** consumes nnUNet segmentation and confidence metadata, including tumor volume and uncertainty
 * **Radiomics Agent:** prepares a PyRadiomics-ready feature summary and treatment-response signal
-* **Medical Literature Agent:** provides a RAG-ready retrieval layer for PubMed and guideline evidence
+* **Medical Literature Agent:** searches PubMed through NCBI E-utilities and combines retrieved studies with guideline evidence
 * **Clinical Reasoning Agent:** synthesizes imaging, radiology report text, patient context, and evidence
 * **Evidence Verification Agent:** checks unsupported claims and hallucination risk
+* **Human-in-the-loop Review:** creates a clinician approval packet and can pause with LangGraph `interrupt()`
 * **Report Generator:** creates a traceable clinical summary for human review
 
 Install optional copilot dependencies:
@@ -370,6 +371,7 @@ Run with Google Gemini and optional LangSmith tracing:
 ```bash
 set GOOGLE_API_KEY=your_google_api_key
 set LANGSMITH_API_KEY=your_langsmith_api_key
+set COPILOT_ENABLE_PUBMED=1
 python -m clinical_ai_copilot.run_demo
 ```
 

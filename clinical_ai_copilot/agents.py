@@ -40,7 +40,11 @@ def radiomics_agent(state: CopilotState) -> CopilotState:
     }
 
 
-def literature_agent(state: CopilotState) -> CopilotState:
+def literature_agent(
+    state: CopilotState,
+    enable_pubmed: bool = True,
+    pubmed_max_results: int = 5,
+) -> CopilotState:
     query = " ".join(
         part
         for part in [
@@ -50,7 +54,12 @@ def literature_agent(state: CopilotState) -> CopilotState:
         ]
         if part
     )
-    evidence = retrieve_medical_evidence(query=query, guidelines=state.get("guidelines", []))
+    evidence = retrieve_medical_evidence(
+        query=query,
+        guidelines=state.get("guidelines", []),
+        enable_pubmed=enable_pubmed,
+        pubmed_max_results=pubmed_max_results,
+    )
     return {
         **state,
         "evidence": evidence,
@@ -137,11 +146,49 @@ Unsupported lexical matches: {unsupported_claims}
     }
 
 
+def human_review_agent(state: CopilotState, enable_interrupt: bool = False) -> CopilotState:
+    verification = state.get("verification", {})
+    review_packet = {
+        "required": True,
+        "reason": verification.get("status", "clinical_ai_requires_review"),
+        "case_id": state.get("case_id"),
+        "review_items": [
+            "Confirm segmentation quality and uncertainty.",
+            "Confirm evidence supports the clinical synthesis.",
+            "Approve, edit, or reject the generated clinical report before use.",
+        ],
+    }
+
+    reviewer_response = {
+        "status": "pending",
+        "reviewer": None,
+        "notes": "Human review interrupt disabled. Report is marked pending review.",
+    }
+    if enable_interrupt:
+        try:
+            from langgraph.types import interrupt
+
+            reviewer_response = interrupt(review_packet)
+        except ImportError:
+            reviewer_response["notes"] = "LangGraph interrupt API unavailable in this environment."
+
+    return {
+        **state,
+        "human_review": {
+            "packet": review_packet,
+            "response": reviewer_response,
+        },
+        "human_review_required": True,
+        "audit_log": append_log(state, "Human-in-the-loop gate prepared clinician review packet."),
+    }
+
+
 def report_generator_agent(state: CopilotState) -> CopilotState:
     image = state.get("image_analysis", {})
     radiomics = state.get("radiomics", {})
     reasoning = state.get("clinical_reasoning", {})
     verification = state.get("verification", {})
+    human_review = state.get("human_review", {})
     evidence = state.get("evidence", [])
 
     evidence_lines = "\n".join(
@@ -174,6 +221,11 @@ Case ID: {state.get("case_id", "unknown")}
 - Status: {verification.get("status")}
 - Hallucination warning: {verification.get("hallucination_warning")}
 - Unsupported claims: {verification.get("unsupported_claims")}
+
+## Human-in-the-loop Review
+- Required: {state.get("human_review_required")}
+- Review status: {human_review.get("response", {}).get("status")}
+- Review note: {human_review.get("response", {}).get("notes")}
 
 ## Safety Notice
 This report is a research copilot output. It is not a diagnosis, treatment recommendation,

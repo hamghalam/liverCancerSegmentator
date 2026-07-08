@@ -22,9 +22,10 @@ The base repository already performs nnUNet liver/tumor segmentation and confide
 | --- | --- | --- |
 | Image Analysis Agent | Reads nnUNet confidence metadata, tumor volume, lesion burden, and uncertainty. | Structured image summary |
 | Radiomics Agent | Prepares a PyRadiomics-ready feature summary and response signal placeholder. | Radiomics feature summary |
-| Medical Literature Agent | Retrieves local guideline snippets and prepares PubMed/RAG queries. | Evidence list |
+| Medical Literature Agent | Retrieves local guideline snippets and searches PubMed through NCBI E-utilities. | RAG evidence list |
 | Clinical Reasoning Agent | Synthesizes imaging, radiomics, report text, patient context, and evidence. | Cautious clinical assessment |
 | Evidence Verification Agent | Checks unsupported claims and hallucination risk. | Safety verification |
+| Human-in-the-loop Review | Creates a clinician review packet and can pause with LangGraph `interrupt()`. | Approval gate |
 | Report Generator | Produces a clinician-readable report with traceable inputs. | Markdown report |
 
 ## Install
@@ -48,10 +49,19 @@ For Google Gemini and LangSmith tracing:
 set GOOGLE_API_KEY=your_google_api_key
 set LANGSMITH_API_KEY=your_langsmith_api_key
 set LANGSMITH_PROJECT=clinical-ai-copilot
+set COPILOT_ENABLE_PUBMED=1
 python -m clinical_ai_copilot.run_demo
 ```
 
 On Linux/macOS, use `export` instead of `set`.
+
+Enable a real LangGraph human approval pause:
+
+```bash
+set COPILOT_ENABLE_HUMAN_INTERRUPT=1
+```
+
+When this is disabled, the graph still creates a structured human-review packet and marks the report as pending review.
 
 ## Use with nnUNet confidence metadata
 
@@ -98,25 +108,47 @@ python -m clinical_ai_copilot.run_demo --case path/to/case.json --output reports
 CT Scan + Radiology Report + Patient Data + Guidelines
         |
         v
-Image Analysis Agent -> Radiomics Agent -> Medical Literature Agent
-        |                    |                    |
-        +--------------------+--------------------+
-                             v
-                  Clinical Reasoning Agent
-                             |
-                             v
-                Evidence Verification Agent
-                             |
-                             v
-                     Report Generator
+Tool Calling: Image Analysis
+        |
+Tool Calling: Radiomics
+        |
+RAG: PubMed + Guidelines
+        |
+Multi-Agent AI: Clinical Reasoning
+        |
+LLM Evaluation + AI Safety
+        |
+Human-in-the-loop Review
+        |
+Explainability: Report Generator
 ```
+
+## Display the LangGraph
+
+In a notebook:
+
+```python
+from IPython.display import Image, display
+from clinical_ai_copilot.graph import build_copilot_graph
+
+react_graph = build_copilot_graph()
+display(Image(react_graph.get_graph(xray=True).draw_mermaid_png()))
+```
+
+From the command line:
+
+```bash
+python -m clinical_ai_copilot.visualize_graph --output clinical_ai_copilot_output/langgraph.png
+```
+
+The rendered node labels intentionally highlight **Multi-Agent AI**, **Agent Orchestration**, **RAG**, **LLM Evaluation**, **Human-in-the-loop**, **Tool Calling**, **AI Safety**, and **Explainability**.
 
 ## Resume bullets
 
 * Built a LangGraph-based multi-agent Clinical AI Copilot for CT-driven colorectal liver metastasis assessment.
 * Integrated nnUNet segmentation metadata, uncertainty scoring, radiology text, patient context, and guideline evidence into a structured agent workflow.
 * Added evidence verification and human-in-the-loop safety gates to reduce hallucination risk in medical AI outputs.
-* Designed a RAG-ready literature agent for PubMed/guideline retrieval and explainable clinical report generation.
+* Designed a RAG literature agent that searches PubMed and combines retrieved articles with guideline evidence for explainable clinical report generation.
 
 ## Safety note
 

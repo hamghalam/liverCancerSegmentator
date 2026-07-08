@@ -4,6 +4,8 @@ import json
 import math
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlencode
+from urllib.request import urlopen
 
 
 def load_segmentation_metadata(path: str | None) -> dict[str, Any]:
@@ -84,7 +86,62 @@ def extract_radiomics_stub(image_analysis: dict[str, Any], report: str) -> dict[
     }
 
 
-def retrieve_medical_evidence(query: str, guidelines: list[str]) -> list[dict[str, Any]]:
+def search_pubmed(query: str, max_results: int = 5, timeout: int = 10) -> list[dict[str, Any]]:
+    """Search PubMed through NCBI E-utilities and return RAG-ready snippets."""
+
+    search_params = urlencode(
+        {
+            "db": "pubmed",
+            "term": query,
+            "retmode": "json",
+            "retmax": max_results,
+            "sort": "relevance",
+        }
+    )
+    search_url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?{search_params}"
+    with urlopen(search_url, timeout=timeout) as response:
+        search_payload = json.loads(response.read().decode("utf-8"))
+
+    pubmed_ids = search_payload.get("esearchresult", {}).get("idlist", [])
+    if not pubmed_ids:
+        return []
+
+    summary_params = urlencode(
+        {
+            "db": "pubmed",
+            "id": ",".join(pubmed_ids),
+            "retmode": "json",
+        }
+    )
+    summary_url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?{summary_params}"
+    with urlopen(summary_url, timeout=timeout) as response:
+        summary_payload = json.loads(response.read().decode("utf-8"))
+
+    result = summary_payload.get("result", {})
+    articles = []
+    for pubmed_id in pubmed_ids:
+        item = result.get(pubmed_id, {})
+        if not item:
+            continue
+        articles.append(
+            {
+                "source": "pubmed",
+                "pubmed_id": pubmed_id,
+                "title": item.get("title", "Untitled PubMed article"),
+                "snippet": item.get("fulljournalname", ""),
+                "url": f"https://pubmed.ncbi.nlm.nih.gov/{pubmed_id}/",
+                "supports": ["literature_search", "rag_context"],
+            }
+        )
+    return articles
+
+
+def retrieve_medical_evidence(
+    query: str,
+    guidelines: list[str],
+    enable_pubmed: bool = True,
+    pubmed_max_results: int = 5,
+) -> list[dict[str, Any]]:
     local_guidelines = guidelines or [
         "Use multidisciplinary review for colorectal liver metastasis treatment planning.",
         "Assess resectability using lesion distribution, future liver remnant, extrahepatic disease, and performance status.",
@@ -100,14 +157,27 @@ def retrieve_medical_evidence(query: str, guidelines: list[str]) -> list[dict[st
         }
         for item in local_guidelines
     ]
-    evidence.append(
-        {
-            "source": "pubmed_search_placeholder",
-            "title": "PubMed retrieval hook",
-            "snippet": f"Query prepared for PubMed/RAG retrieval: {query}",
-            "supports": ["literature_search"],
-        }
-    )
+    if enable_pubmed:
+        try:
+            evidence.extend(search_pubmed(query=query, max_results=pubmed_max_results))
+        except Exception as exc:
+            evidence.append(
+                {
+                    "source": "pubmed_search_error",
+                    "title": "PubMed retrieval unavailable",
+                    "snippet": f"PubMed query prepared but search failed: {exc}",
+                    "supports": ["literature_search", "rag_context"],
+                }
+            )
+    else:
+        evidence.append(
+            {
+                "source": "pubmed_search_disabled",
+                "title": "PubMed retrieval disabled",
+                "snippet": f"PubMed/RAG query prepared: {query}",
+                "supports": ["literature_search", "rag_context"],
+            }
+        )
     return evidence
 
 

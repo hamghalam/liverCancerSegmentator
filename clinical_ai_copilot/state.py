@@ -23,5 +23,6 @@ class CopilotState(TypedDict, total=False):
     evidence: list[dict[str, Any]]
     clinical_reasoning: dict[str, Any]
     verification: dict[str, Any]
+    human_review: dict[str, Any]
     final_report: str
     audit_log: list[str]
