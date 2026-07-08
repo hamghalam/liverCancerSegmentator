@@ -18,6 +18,7 @@ failureDetection/fd.ipynb
 data/
 failureDetection/outputs/
 failureDetection/*.csv
+clinical_ai_copilot_output/
 
 # OS files
 .DS_Store

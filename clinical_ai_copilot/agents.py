@@ -7,13 +7,44 @@ from .tools import (
     estimate_lesion_burden,
     evidence_supports_claim,
     extract_radiomics_stub,
+    load_case_memory,
     load_segmentation_metadata,
     retrieve_medical_evidence,
+    upsert_case_memory,
 )
 
 
 def append_log(state: CopilotState, message: str) -> list[str]:
-    return [*state.get("audit_log", []), message]
+    return [message]
+
+
+def planner_agent(state: CopilotState) -> CopilotState:
+    plan = {
+        "objective": state.get("clinical_question", "Clinical review of CRLM case."),
+        "parallel_branches": [
+            "Image Analysis -> Radiomics",
+            "Medical Literature RAG",
+            "Memory retrieval",
+        ],
+        "join_strategy": "Reducer merges imaging, radiomics, evidence, and memory before LLM reasoning.",
+        "safety_gates": [
+            "Evidence verification",
+            "Human-in-the-loop review",
+            "Research-use safety notice",
+        ],
+    }
+    return {
+        "execution_plan": plan,
+        "audit_log": append_log(state, "Planner Agent created the case execution plan."),
+    }
+
+
+def memory_agent(state: CopilotState, memory_path: str | None = None) -> CopilotState:
+    memory = load_case_memory(state.get("case_id"), memory_path)
+    return {
+        "memory_context": memory,
+        "audit_log": append_log(state, "Memory Agent retrieved prior case context."),
+    }
 
 
 def image_analysis_agent(state: CopilotState) -> CopilotState:
@@ -22,7 +53,6 @@ def image_analysis_agent(state: CopilotState) -> CopilotState:
     analysis["metadata_status"] = metadata.get("status", "loaded")
     analysis["case_id"] = state.get("case_id")
     return {
-        **state,
         "image_analysis": analysis,
         "audit_log": append_log(state, "Image Analysis Agent completed nnUNet metadata review."),
     }
@@ -34,7 +64,6 @@ def radiomics_agent(state: CopilotState) -> CopilotState:
         state.get("radiology_report", ""),
     )
     return {
-        **state,
         "radiomics": radiomics,
         "audit_log": append_log(state, "Radiomics Agent generated feature and response summary."),
     }
@@ -61,7 +90,6 @@ def literature_agent(
         pubmed_max_results=pubmed_max_results,
     )
     return {
-        **state,
         "evidence": evidence,
         "audit_log": append_log(state, "Medical Literature Agent retrieved guideline/RAG evidence."),
     }
@@ -71,6 +99,7 @@ def clinical_reasoning_agent(state: CopilotState, llm: Any) -> CopilotState:
     image = state.get("image_analysis", {})
     radiomics = state.get("radiomics", {})
     evidence = state.get("evidence", [])
+    reduced_context = state.get("reduced_context", {})
     patient = state.get("patient_profile", {})
 
     prompt = f"""
@@ -78,6 +107,7 @@ You are a clinical AI copilot for colorectal liver metastasis case review.
 Do not provide autonomous medical decisions. Produce a cautious synthesis.
 
 Patient profile: {patient}
+Reduced context: {reduced_context}
 Image analysis: {image}
 Radiomics summary: {radiomics}
 Evidence snippets: {evidence}
@@ -107,10 +137,33 @@ Clinical question: {state.get("clinical_question", "")}
         },
     }
     return {
-        **state,
         "clinical_reasoning": reasoning,
         "human_review_required": True,
         "audit_log": append_log(state, "Clinical Reasoning Agent synthesized case-level assessment."),
+    }
+
+
+def reducer_agent(state: CopilotState) -> CopilotState:
+    image = state.get("image_analysis", {})
+    radiomics = state.get("radiomics", {})
+    evidence = state.get("evidence", [])
+    memory = state.get("memory_context", {})
+    plan = state.get("execution_plan", {})
+
+    reduced_context = {
+        "plan_objective": plan.get("objective"),
+        "prior_case_context_available": bool(memory.get("prior_context")),
+        "lesion_burden": image.get("lesion_burden"),
+        "segmentation_uncertainty": image.get("segmentation_uncertainty"),
+        "tumor_volume_ml": image.get("tumor_volume_ml"),
+        "radiomics_response_signal": radiomics.get("response_signal"),
+        "evidence_count": len(evidence),
+        "top_evidence_titles": [item.get("title") for item in evidence[:3]],
+        "safety_posture": "Require human review for all clinical conclusions.",
+    }
+    return {
+        "reduced_context": reduced_context,
+        "audit_log": append_log(state, "Reducer Agent merged parallel branch outputs for reasoning."),
     }
 
 
@@ -140,7 +193,6 @@ Unsupported lexical matches: {unsupported_claims}
         "verifier_note": str(text),
     }
     return {
-        **state,
         "verification": verification,
         "audit_log": append_log(state, "Evidence Verification Agent checked support and safety risks."),
     }
@@ -173,7 +225,6 @@ def human_review_agent(state: CopilotState, enable_interrupt: bool = False) -> C
             reviewer_response["notes"] = "LangGraph interrupt API unavailable in this environment."
 
     return {
-        **state,
         "human_review": {
             "packet": review_packet,
             "response": reviewer_response,
@@ -183,9 +234,12 @@ def human_review_agent(state: CopilotState, enable_interrupt: bool = False) -> C
     }
 
 
-def report_generator_agent(state: CopilotState) -> CopilotState:
+def report_generator_agent(state: CopilotState, memory_path: str | None = None) -> CopilotState:
+    plan = state.get("execution_plan", {})
+    memory = state.get("memory_context", {})
     image = state.get("image_analysis", {})
     radiomics = state.get("radiomics", {})
+    reduced_context = state.get("reduced_context", {})
     reasoning = state.get("clinical_reasoning", {})
     verification = state.get("verification", {})
     human_review = state.get("human_review", {})
@@ -197,6 +251,14 @@ def report_generator_agent(state: CopilotState) -> CopilotState:
     report = f"""# Clinical AI Copilot Report
 
 Case ID: {state.get("case_id", "unknown")}
+
+## Planner Agent
+- Objective: {plan.get("objective")}
+- Join strategy: {plan.get("join_strategy")}
+
+## Memory Agent
+- Status: {memory.get("status")}
+- Prior context available: {bool(memory.get("prior_context"))}
 
 ## Image Analysis Agent
 - Tumor volume: {image.get("tumor_volume_ml")} mL
@@ -211,6 +273,9 @@ Case ID: {state.get("case_id", "unknown")}
 
 ## Medical Literature Agent
 {evidence_lines}
+
+## Reducer Agent
+- Reduced context: {reduced_context}
 
 ## Clinical Reasoning Agent
 - Treatment response likelihood: {reasoning.get("treatment_response_likelihood")}
@@ -231,8 +296,17 @@ Case ID: {state.get("case_id", "unknown")}
 This report is a research copilot output. It is not a diagnosis, treatment recommendation,
 or replacement for oncologist/radiologist review.
 """
+    upsert_case_memory(
+        state.get("case_id"),
+        memory_path,
+        {
+            "treatment_response_likelihood": reasoning.get("treatment_response_likelihood"),
+            "surgery_suitability": reasoning.get("surgery_suitability"),
+            "segmentation_uncertainty": image.get("segmentation_uncertainty"),
+            "human_review_status": human_review.get("response", {}).get("status"),
+        },
+    )
     return {
-        **state,
         "final_report": report,
-        "audit_log": append_log(state, "Report Generator produced final clinical summary."),
+        "audit_log": append_log(state, "Report Generator produced final clinical summary and updated memory."),
     }

@@ -26,6 +26,41 @@ def load_segmentation_metadata(path: str | None) -> dict[str, Any]:
         return json.load(handle)
 
 
+def load_case_memory(case_id: str | None, memory_path: str | None) -> dict[str, Any]:
+    if not case_id or not memory_path:
+        return {"status": "not_available", "case_id": case_id, "prior_context": None}
+
+    path = Path(memory_path)
+    if not path.exists():
+        return {"status": "empty", "case_id": case_id, "prior_context": None}
+
+    with path.open("r", encoding="utf-8") as handle:
+        memory = json.load(handle)
+
+    return {
+        "status": "loaded" if case_id in memory else "not_found",
+        "case_id": case_id,
+        "prior_context": memory.get(case_id),
+        "memory_path": str(path),
+    }
+
+
+def upsert_case_memory(case_id: str | None, memory_path: str | None, summary: dict[str, Any]) -> None:
+    if not case_id or not memory_path:
+        return
+
+    path = Path(memory_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    memory = {}
+    if path.exists():
+        with path.open("r", encoding="utf-8") as handle:
+            memory = json.load(handle)
+
+    memory[case_id] = summary
+    with path.open("w", encoding="utf-8") as handle:
+        json.dump(memory, handle, indent=2)
+
+
 def estimate_lesion_burden(metadata: dict[str, Any]) -> dict[str, Any]:
     volume_mm3 = metadata.get("tumor_volume_mm3")
     confidence = metadata.get("confidence_pairwise_dice")

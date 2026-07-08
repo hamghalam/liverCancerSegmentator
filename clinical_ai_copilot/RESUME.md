@@ -10,7 +10,7 @@ Built a LangGraph-based multi-agent clinical AI copilot that combines nnUNet CT 
 
 ## Resume bullets
 
-* Designed a LangGraph multi-agent workflow with seven specialized nodes for image analysis, radiomics, medical literature retrieval, clinical reasoning, evidence verification, human review, and report generation.
+* Designed a LangGraph multi-agent workflow with planner, memory, reducer, image analysis, radiomics, medical literature retrieval, clinical reasoning, evidence verification, human review, and report generation nodes.
 * Integrated nnUNet liver/tumor segmentation metadata, tumor volume, ensemble confidence, and uncertainty estimates into a downstream clinical reasoning pipeline.
 * Built a RAG evidence layer that searches PubMed through NCBI E-utilities and combines retrieved studies with guideline snippets for traceable clinical summaries.
 * Added LLM safety controls including unsupported-claim detection, hallucination warnings, LangGraph human-review gates, and explainable audit logs.

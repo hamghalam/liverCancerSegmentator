@@ -16,6 +16,7 @@ class CopilotConfig:
     enable_pubmed: bool
     pubmed_max_results: int
     enable_human_interrupt: bool
+    memory_path: str
 
     @classmethod
     def from_env(cls) -> "CopilotConfig":
@@ -29,4 +30,8 @@ class CopilotConfig:
             enable_pubmed=os.getenv("COPILOT_ENABLE_PUBMED", "1") == "1",
             pubmed_max_results=int(os.getenv("COPILOT_PUBMED_MAX_RESULTS", "5")),
             enable_human_interrupt=os.getenv("COPILOT_ENABLE_HUMAN_INTERRUPT", "0") == "1",
+            memory_path=os.getenv(
+                "COPILOT_MEMORY_PATH",
+                "clinical_ai_copilot_output/case_memory.json",
+            ),
         )

@@ -10,6 +10,7 @@ The base repository already performs nnUNet liver/tumor segmentation and confide
 
 * LangGraph agent orchestration
 * Multi-agent AI workflow design
+* Planner, memory, and reducer graph nodes
 * RAG-ready medical literature retrieval
 * Tool calling over segmentation metadata
 * LLM evaluation and hallucination checks
@@ -20,9 +21,12 @@ The base repository already performs nnUNet liver/tumor segmentation and confide
 
 | Agent | Role | Output |
 | --- | --- | --- |
+| Planner Agent | Creates the execution plan and defines parallel branches, join strategy, and safety gates. | Execution plan |
+| Memory Agent | Retrieves prior case context from a local JSON memory store. | Longitudinal memory context |
 | Image Analysis Agent | Reads nnUNet confidence metadata, tumor volume, lesion burden, and uncertainty. | Structured image summary |
 | Radiomics Agent | Prepares a PyRadiomics-ready feature summary and response signal placeholder. | Radiomics feature summary |
 | Medical Literature Agent | Retrieves local guideline snippets and searches PubMed through NCBI E-utilities. | RAG evidence list |
+| Reducer Agent | Merges imaging, radiomics, evidence, plan, and memory into compact reasoning context. | Reduced context |
 | Clinical Reasoning Agent | Synthesizes imaging, radiomics, report text, patient context, and evidence. | Cautious clinical assessment |
 | Evidence Verification Agent | Checks unsupported claims and hallucination risk. | Safety verification |
 | Human-in-the-loop Review | Creates a clinician review packet and can pause with LangGraph `interrupt()`. | Approval gate |
@@ -50,6 +54,7 @@ set GOOGLE_API_KEY=your_google_api_key
 set LANGSMITH_API_KEY=your_langsmith_api_key
 set LANGSMITH_PROJECT=clinical-ai-copilot
 set COPILOT_ENABLE_PUBMED=1
+set COPILOT_MEMORY_PATH=clinical_ai_copilot_output/case_memory.json
 python -m clinical_ai_copilot.run_demo
 ```
 
@@ -104,22 +109,33 @@ python -m clinical_ai_copilot.run_demo --case path/to/case.json --output reports
 
 ## Architecture
 
+![Clinical AI Copilot LangGraph](assets/clinical_ai_copilot_graph.png)
+
 ```text
 CT Scan + Radiology Report + Patient Data + Guidelines
         |
         v
-Tool Calling: Image Analysis
+Planner: Agent Orchestration
+        |-------------------------|-------------------------|
+        v                         v                         v
+Memory: Case Context       Tool Calling: Image Analysis    RAG: PubMed + Guidelines
+                                  |                         |
+                                  v                         |
+                         Tool Calling: Radiomics            |
+        |-------------------------|-------------------------|
+        v
+Reducer: Evidence + Imaging Context
         |
-Tool Calling: Radiomics
-        |
-RAG: PubMed + Guidelines
-        |
+        v
 Multi-Agent AI: Clinical Reasoning
         |
+        v
 LLM Evaluation + AI Safety
         |
+        v
 Human-in-the-loop Review
         |
+        v
 Explainability: Report Generator
 ```
 
@@ -140,6 +156,7 @@ From the command line:
 ```bash
 python -m clinical_ai_copilot.visualize_graph --format mermaid --output clinical_ai_copilot_output/langgraph.mmd
 python -m clinical_ai_copilot.visualize_graph --format png --output clinical_ai_copilot_output/langgraph.png
+python -m clinical_ai_copilot.render_static_graph --output clinical_ai_copilot/assets/clinical_ai_copilot_graph.png
 ```
 
 The rendered node labels intentionally highlight **Multi-Agent AI**, **Agent Orchestration**, **RAG**, **LLM Evaluation**, **Human-in-the-loop**, **Tool Calling**, **AI Safety**, and **Explainability**.

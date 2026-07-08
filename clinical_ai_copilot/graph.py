@@ -11,7 +11,10 @@ from .agents import (
     human_review_agent,
     image_analysis_agent,
     literature_agent,
+    memory_agent,
+    planner_agent,
     radiomics_agent,
+    reducer_agent,
     report_generator_agent,
 )
 from .config import CopilotConfig
@@ -19,9 +22,12 @@ from .llm import load_llm
 from .state import CopilotState
 
 
+NODE_PLANNER = "Planner - Agent Orchestration"
+NODE_MEMORY = "Memory - Case Context"
 NODE_IMAGE = "Tool Calling - Image Analysis"
 NODE_RADIOMICS = "Tool Calling - Radiomics"
 NODE_RAG = "RAG - PubMed + Guidelines"
+NODE_REDUCER = "Reducer - Evidence + Imaging Context"
 NODE_REASONING = "Multi-Agent AI - Clinical Reasoning"
 NODE_EVALUATION = "LLM Evaluation + AI Safety"
 NODE_HUMAN = "Human-in-the-loop Review"
@@ -41,7 +47,7 @@ def build_copilot_graph(config: CopilotConfig | None = None) -> Any:
     llm = load_llm(config)
 
     try:
-        from langgraph.graph import END, StateGraph
+        from langgraph.graph import END, START, StateGraph
     except ImportError as exc:
         raise RuntimeError(
             "LangGraph is required for the Clinical AI Copilot. "
@@ -49,6 +55,8 @@ def build_copilot_graph(config: CopilotConfig | None = None) -> Any:
         ) from exc
 
     graph = StateGraph(CopilotState)
+    graph.add_node(NODE_PLANNER, planner_agent)
+    graph.add_node(NODE_MEMORY, lambda state: memory_agent(state, memory_path=config.memory_path))
     graph.add_node(NODE_IMAGE, image_analysis_agent)
     graph.add_node(NODE_RADIOMICS, radiomics_agent)
     graph.add_node(
@@ -60,6 +68,7 @@ def build_copilot_graph(config: CopilotConfig | None = None) -> Any:
         ),
     )
     graph.add_node(NODE_REASONING, lambda state: clinical_reasoning_agent(state, llm))
+    graph.add_node(NODE_REDUCER, reducer_agent)
     graph.add_node(NODE_EVALUATION, lambda state: evidence_verification_agent(state, llm))
     graph.add_node(
         NODE_HUMAN,
@@ -68,12 +77,15 @@ def build_copilot_graph(config: CopilotConfig | None = None) -> Any:
             enable_interrupt=config.enable_human_interrupt,
         ),
     )
-    graph.add_node(NODE_REPORT, report_generator_agent)
+    graph.add_node(NODE_REPORT, lambda state: report_generator_agent(state, memory_path=config.memory_path))
 
-    graph.set_entry_point(NODE_IMAGE)
+    graph.add_edge(START, NODE_PLANNER)
+    graph.add_edge(NODE_PLANNER, NODE_MEMORY)
+    graph.add_edge(NODE_PLANNER, NODE_IMAGE)
+    graph.add_edge(NODE_PLANNER, NODE_RAG)
     graph.add_edge(NODE_IMAGE, NODE_RADIOMICS)
-    graph.add_edge(NODE_RADIOMICS, NODE_RAG)
-    graph.add_edge(NODE_RAG, NODE_REASONING)
+    graph.add_edge([NODE_MEMORY, NODE_RADIOMICS, NODE_RAG], NODE_REDUCER)
+    graph.add_edge(NODE_REDUCER, NODE_REASONING)
     graph.add_edge(NODE_REASONING, NODE_EVALUATION)
     graph.add_edge(NODE_EVALUATION, NODE_HUMAN)
     graph.add_edge(NODE_HUMAN, NODE_REPORT)
